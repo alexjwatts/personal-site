@@ -1,0 +1,165 @@
+---
+// The last page in the chain: ways to get in touch, then a way back to every other page.
+import Base from '../layouts/Base.astro';
+import { site } from '../site';
+
+const channels = site.links.filter((link) => link.href);
+const pages = [{ label: 'About me', href: '/' }, ...site.nav];
+---
+
+<Base title="Contact" description={site.contact.intro}>
+  <section class="contact-head">
+    <h1 class="contact-title" data-duration="800">{site.contact.heading}</h1>
+    <p>{site.contact.intro}</p>
+  </section>
+
+  {/* Each way to reach Alex is one column under a hairline, like the principles on the builds page. */}
+  <ul class="channels">
+    {channels.map((link) => (
+      <li>
+        <a href={link.href} target={link.newTab ? '_blank' : undefined} rel={link.newTab ? 'noopener' : undefined}>
+          <span class="channel-name">{link.label}</span>
+          <span class="channel-detail">{link.href.startsWith('mailto:') ? link.href.slice(7) : link.href.replace(/^https:\/\/(www\.)?/, '').split('/')[0]}</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d={link.newTab ? 'M4.5 11.5l7-7M5.5 4.5h6v6' : 'M3 8h10M8.5 3.5 13 8l-4.5 4.5'} /></svg>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {/* The end of the chain: a way back to every page. */}
+  <nav class="page-next" aria-label="All pages">
+    {pages.map((page) => (
+      <a class="next-link" href={page.href}>
+        {page.label}
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+      </a>
+    ))}
+  </nav>
+</Base>
+
+<style>
+  .contact-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(3rem, 10vh, 7rem) var(--gutter) clamp(2rem, 5vh, 3.5rem);
+    text-align: center;
+  }
+
+  .contact-head h1 {
+    font-size: clamp(3.5rem, 11vw, 8rem);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .contact-head p {
+    max-width: 36rem;
+    margin: 1.5rem 0 0;
+    color: var(--muted);
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
+    line-height: 1.45;
+  }
+
+  .channels {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 1.5rem;
+    max-width: 60rem;
+    margin: clamp(1rem, 3vh, 2rem) auto 0;
+    padding: 0 var(--gutter);
+    list-style: none;
+  }
+
+  .channels li {
+    border-top: 1px solid var(--line);
+  }
+
+  .channels a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    padding: clamp(1.5rem, 4vh, 2.25rem) 0.5rem;
+    color: var(--text);
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .channel-name {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .channel-detail {
+    color: var(--muted);
+    font-size: 0.9375rem;
+    overflow-wrap: anywhere;
+  }
+
+  .channels svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    margin-top: 0.4rem;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+  }
+
+  .channels a:hover .channel-name {
+    color: var(--accent);
+  }
+
+  .channels a:hover svg {
+    transform: translate(0.15rem, -0.15rem);
+  }
+
+  .channels a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  @media (max-width: 640px) {
+    .channels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .page-next {
+    padding-top: clamp(3rem, 8vh, 5rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .channels svg {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import { pushToFooter } from '../scripts/page-sections';
+
+  pushToFooter();
+
+  // The title decodes from random characters, like the other page titles.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const title = document.querySelector<HTMLElement>('.contact-title')!;
+    const final = title.textContent!;
+    const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const duration = Number(title.dataset.duration);
+    title.style.minWidth = `${title.offsetWidth}px`;
+    const start = performance.now();
+    const step = (now: number) => {
+      const done = Math.floor(((now - start) / duration) * final.length);
+      title.textContent = [...final].map((letter, index) => (index < done || letter === ' ' ? letter : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
+      if (now - start < duration) requestAnimationFrame(step);
+      else { title.textContent = final; title.style.minWidth = ''; }
+    };
+    requestAnimationFrame(step);
+  }
+</script>

@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro';
+import { posts, formatDate } from '../../posts';
+
+export const getStaticPaths = () => posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+
+const { post } = Astro.props;
+---
+
+<Base title={post.title}>
+  <article class="post">
+    <p class="meta">{formatDate(post.date)}</p>
+    <h1>{post.title}</h1>
+    <post.Content />
+  </article>
+</Base>

@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+import { posts, formatDate } from '../posts';
+import { site } from '../site';
+---
+
+<Base title="Blog">
+  <section class="page">
+    <h1>Blog</h1>
+    <ol class="post-list">
+      {posts.map((post) => (
+        <li>
+          <p class="meta">{formatDate(post.date)}</p>
+          <a href={`/blog/${post.slug}`}>{post.title}</a>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <nav class="page-next" aria-label="Next page">
+    <a class="next-link" href={site.next.blog.href}>
+      {site.next.blog.label}
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+    </a>
+  </nav>
+</Base>
+
+<script>
+  import { pushToFooter } from '../scripts/page-sections';
+
+  pushToFooter();
+</script>

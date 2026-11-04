@@ -1,0 +1,6 @@
+---
+import Showcase from '../../components/Showcase.astro';
+import { site } from '../../site';
+---
+
+<Showcase heading="Experience" entries={site.experience} base="/experience" next={{ label: 'Explore my AI builds', href: '/builds' }} />

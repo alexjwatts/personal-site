@@ -1,0 +1,644 @@
+---
+// A title screen, then one full screen per entry (most recent first) with a side rail and push-to-advance
+// scrolling. Used by the Experience and Projects pages.
+import Base from '../layouts/Base.astro';
+import type { Entry } from '../site';
+
+interface Props {
+  heading: string;
+  entries: Entry[];
+  base: string;
+  next?: { label: string; href: string };
+}
+
+const { heading, entries, base, next } = Astro.props;
+const jobs = [...entries].sort((a, b) => b.start.localeCompare(a.start));
+const timeline = [...jobs].reverse();
+---
+
+<Base title={heading}>
+  <section class="xp-title">
+    <div class="xp-inner">
+    <h1 class="xp-decode" data-duration="900">{heading}</h1>
+    <p class="xp-route">
+      {timeline.map((job, index) => <>{index > 0 && <span class="xp-arrow" aria-hidden="true">→</span>}<span>{job.title}</span></>)}
+    </p>
+    </div>
+    <div class="xp-prompt" aria-hidden="true">
+      Scroll
+      <svg viewBox="0 0 16 16"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" /></svg>
+    </div>
+  </section>
+
+  {jobs.map((job, index) => (
+    <section class:list={['xp-job', { 'xp-pending': job.pending }]} id={job.slug}>
+      <span class="xp-link" aria-hidden="true"></span>
+      <div class="xp-inner">
+        <p class="xp-when">{job.when}{job.where && ` · ${job.where}`}</p>
+        <h2>{job.title}</h2>
+        {job.role && <p class="xp-role">{job.role}</p>}
+        {job.pending && <p class="xp-status">Incoming</p>}
+        {job.summary && <p class="xp-summary">{job.summary}</p>}
+
+        {job.stats.length > 0 && (
+          <dl class="xp-stats">
+            {job.stats.map((stat) => (
+              <div><dt>{stat.label}</dt><dd>{stat.value}</dd></div>
+            ))}
+          </dl>
+        )}
+
+        {job.slug && job.detail && (
+          <a class="xp-more" href={`${base}/${job.slug}`}>
+            Read more
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+          </a>
+        )}
+
+        {/* The way on to the next section sits on the last role's screen, so it's there without an extra scroll. */}
+        {next && index === jobs.length - 1 && (
+          <p class="xp-next">
+            <a class="xp-next-link" href={next.href}>
+              {next.label}
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+            </a>
+          </p>
+        )}
+      </div>
+    </section>
+  ))}
+
+  <nav class="xp-rail" aria-label={`${heading} on this page`}>
+    <ol>
+      {jobs.map((job, index) => (
+        <li>
+          <button type="button" data-screen={index + 1} class:list={{ upcoming: job.pending }}>
+            <span class="xp-rail-name">{job.title}</span>
+            <span class="xp-rail-year">{job.start.slice(0, 4)}</span>
+          </button>
+        </li>
+      ))}
+    </ol>
+  </nav>
+</Base>
+
+<style>
+  /* Like the homepage: a title screen, then one full screen per role. Scrolling settles on each screen in turn. */
+  .xp-title,
+  .xp-job {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100svh - 3.9rem);
+    padding: 2rem var(--gutter);
+    text-align: center;
+  }
+
+  .xp-title {
+    position: relative;
+  }
+
+  .xp-title h1 {
+    font-size: clamp(3.5rem, 11vw, 8rem);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .xp-route {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem 0.9rem;
+    margin: 1.75rem 0 0;
+    font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+    animation: xp-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.8s both;
+  }
+
+  .xp-arrow {
+    color: var(--accent);
+  }
+
+  .xp-prompt {
+    position: absolute;
+    bottom: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    animation: xp-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.4s both;
+  }
+
+  .xp-prompt svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: xp-nudge 1.8s ease-in-out 2s infinite;
+  }
+
+  @keyframes xp-nudge {
+    0%, 60%, 100% { transform: none; }
+    30% { transform: translateY(0.3rem); }
+  }
+
+  @keyframes xp-rise {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateY(0.6em);
+    }
+  }
+
+  /* Transitions follow the scroll: the screen you're leaving lifts, shrinks slightly and blurs away while the
+     next one rises in and sharpens. --p is how far a screen is from the middle of the view (-1 above, 1 below). */
+  .xp-inner {
+    --p: 0;
+    --a: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 58rem;
+    opacity: calc(1 - var(--a) * 1.1);
+    filter: blur(calc(var(--a) * 10px));
+    --pull: 0;
+    transform: translateY(calc(var(--p) * 5rem + var(--pull) * -2.5rem)) scale(calc(1 - var(--a) * 0.08 - var(--pull) * 0.02));
+    transition: transform 0.25s ease-out;
+    will-change: transform, opacity, filter;
+  }
+
+  /* A line drops from the top of each role's screen to its dates, linking it to the screen before like a leg of the route. */
+  .xp-job {
+    position: relative;
+  }
+
+  .xp-link {
+    --draw: 1;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 0;
+    background: linear-gradient(transparent, var(--accent));
+    transform: translateX(-50%) scaleY(var(--draw));
+    transform-origin: top;
+  }
+
+  .xp-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: -3.5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: var(--draw);
+    transform: scale(calc(0.4 + var(--draw) * 0.6));
+  }
+
+  .xp-when {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .xp-job h2 {
+    margin-top: 0.5rem;
+    font-size: clamp(3.5rem, 9vw, 6.5rem);
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+  }
+
+  .xp-role {
+    margin: 1rem 0 0;
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    font-weight: 500;
+  }
+
+  .xp-summary {
+    max-width: 40rem;
+    margin: 1.25rem 0 0;
+    color: var(--muted);
+  }
+
+  .xp-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    margin: 2.5rem 0 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .xp-stats div {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    padding: 1.5rem 1rem 0;
+  }
+
+  .xp-stats div + div {
+    border-left: 1px solid var(--line);
+  }
+
+  .xp-stats dd {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .xp-stats dt {
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .xp-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 2.25rem;
+    padding: 0.7rem 1.35rem;
+    border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+    border-radius: 999px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .xp-more:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 1.25rem color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .xp-more svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+  }
+
+  .xp-more:hover svg {
+    transform: translateX(0.25rem);
+  }
+
+  /* Under the last role: one way on to the next section, like the button at the end of the homepage. */
+  /* A line between the last role and the way on, like the other pages. */
+  .xp-next {
+    width: 100%;
+    margin: clamp(2rem, 5vh, 3rem) 0 0;
+    padding-top: clamp(1.5rem, 4vh, 2.5rem);
+    border-top: 1px solid var(--line);
+  }
+
+  .xp-next-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.6rem;
+    border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+    border-radius: 999px;
+    font-size: 1.125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .xp-next-link:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 1.5rem color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .xp-next-link svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+  }
+
+  .xp-next-link:hover svg {
+    transform: translateX(0.25rem);
+  }
+
+  /* A role that isn't confirmed yet gets a pulsing dot, like a city the route hasn't reached. */
+  .xp-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 1rem 0 0;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .xp-status::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: xp-pulse 2.4s ease-out infinite;
+  }
+
+  @keyframes xp-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    70%,
+    100% {
+      box-shadow: 0 0 0 7px transparent;
+    }
+  }
+
+  /* Side rail: one stop per role, newest first, each with the role's name and the year it starts. The name is the
+     main label so two roles in the same year never get confused; the year sits underneath as context. */
+  .xp-rail {
+    position: fixed;
+    z-index: 4;
+    top: 50%;
+    right: clamp(1rem, 2vw, 1.75rem);
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  .xp-rail.on {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .xp-rail ol {
+    position: relative;
+    display: grid;
+    gap: 1.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .xp-rail ol::before {
+    content: '';
+    position: absolute;
+    top: 0.6rem;
+    bottom: 0.6rem;
+    right: 3.5px;
+    width: 1px;
+    background: var(--line);
+  }
+
+  .xp-rail button {
+    display: grid;
+    grid-template-columns: auto 8px;
+    column-gap: 0.65rem;
+    align-items: center;
+    justify-items: end;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: 400 0.8125rem/1.25 var(--sans);
+    text-align: right;
+    cursor: pointer;
+  }
+
+  .xp-rail button::after {
+    content: '';
+    grid-row: 1;
+    grid-column: 2;
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--muted);
+    border-radius: 50%;
+    background: var(--bg);
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
+  }
+
+  .xp-rail-name {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .xp-rail-year {
+    grid-row: 2;
+    grid-column: 1;
+    font-size: 0.75rem;
+    opacity: 0.75;
+  }
+
+  .xp-rail button.upcoming::after {
+    border-style: dashed;
+  }
+
+  .xp-rail button:hover,
+  .xp-rail button.current {
+    color: var(--text);
+  }
+
+  .xp-rail button.current .xp-rail-name {
+    font-weight: 600;
+  }
+
+  .xp-rail button.current::after {
+    border-color: var(--accent);
+    background: var(--accent);
+    transform: scale(1.4);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .xp-rail button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 899px) {
+    .xp-rail {
+      display: none;
+    }
+
+    .xp-title,
+    .xp-job {
+      min-height: calc(100svh - 3.9rem);
+    }
+
+    .xp-stats div {
+      padding: 1rem 0.35rem 0;
+    }
+
+    .xp-stats dd {
+      font-size: 1.5rem;
+    }
+
+    .xp-stats dt {
+      font-size: 0.8125rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .xp-route,
+    .xp-prompt,
+    .xp-prompt svg,
+    .xp-status::before {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (!still) {
+    const screens = [...document.querySelectorAll<HTMLElement>('.xp-title, .xp-job')];
+    const rail = document.querySelector<HTMLElement>('.xp-rail')!;
+    const railButtons = [...rail.querySelectorAll<HTMLButtonElement>('button')];
+    const update = () => {
+      // The rail shows once you're past the title, with the role you're looking at marked.
+      const centred = screens.reduce((best, screen, index) => {
+        const box = screen.getBoundingClientRect();
+        return Math.abs(box.top + box.height / 2 - innerHeight / 2) < best.distance ? { index, distance: Math.abs(box.top + box.height / 2 - innerHeight / 2) } : best;
+      }, { index: 0, distance: Infinity }).index;
+      // It hides again once the footer comes into view at the very bottom.
+      const foot = document.querySelector<HTMLElement>('.foot');
+      rail.classList.toggle('on', centred > 0 && !(foot && foot.getBoundingClientRect().top < innerHeight * 0.85));
+      railButtons.forEach((button) => button.classList.toggle('current', Number(button.dataset.screen) === centred));
+
+      for (const screen of screens) {
+        const box = screen.getBoundingClientRect();
+        const p = Math.max(-1, Math.min(1, (box.top + box.height / 2 - innerHeight / 2) / innerHeight));
+        const inner = screen.querySelector<HTMLElement>('.xp-inner')!;
+        inner.style.setProperty('--p', p.toFixed(3));
+        inner.style.setProperty('--a', Math.abs(p).toFixed(3));
+        screen.querySelector<HTMLElement>('.xp-link')?.style.setProperty('--draw', Math.max(0, Math.min(1, 1 - p * 2.2)).toFixed(3));
+      }
+    };
+    let frame = 0;
+    addEventListener('scroll', () => { frame ||= requestAnimationFrame(() => { frame = 0; update(); }); }, { passive: true });
+    // Each connecting line runs from the top of its screen to just above that role's dates.
+    const fitLinks = () => {
+      for (const screen of screens) {
+        const link = screen.querySelector<HTMLElement>('.xp-link');
+        if (link) link.style.height = `${Math.max(0, screen.querySelector<HTMLElement>('.xp-inner')!.offsetTop - 18)}px`;
+      }
+    };
+    addEventListener('resize', () => { fitLinks(); update(); });
+    fitLinks();
+
+    // Coming back from a role's detail page (/experience#slug) lands straight on that role, not the title.
+    // The browser also jumps to the #slug itself once the page loads, so land again after that to line it up
+    // exactly under the top bar.
+    const arrived = location.hash && document.getElementById(location.hash.slice(1));
+    const land = () => {
+      if (arrived) scrollTo({ top: arrived.getBoundingClientRect().top + scrollY - document.querySelector<HTMLElement>('.bar')!.offsetHeight, behavior: 'instant' });
+    };
+    land();
+    addEventListener('load', () => requestAnimationFrame(land));
+    update();
+
+    // Resistance: moving to the next screen takes a deliberate push. Scrolling builds up "pull" on the current
+    // screen (it visibly gives a little); only once the pull passes a threshold does the page glide to the next
+    // screen, and it then waits a moment before accepting another push. A pause lets the pull relax back.
+    const header = document.querySelector<HTMLElement>('.bar')!;
+    const stops = () => [...screens.map((screen) => Math.max(0, screen.getBoundingClientRect().top + scrollY - (screen.classList.contains('xp-title') ? 0 : header.offsetHeight))), document.documentElement.scrollHeight - innerHeight];
+    const nearest = () => {
+      const all = stops();
+      return all.reduce((best, stop, index) => (Math.abs(stop - scrollY) < Math.abs(all[best] - scrollY) ? index : best), 0);
+    };
+    let pull = 0;
+    let busy = false;
+    let relax = 0;
+    const threshold = 650;
+    const showPull = () => {
+      const inner = screens[Math.min(nearest(), screens.length - 1)].querySelector<HTMLElement>('.xp-inner')!;
+      for (const screen of screens) screen.querySelector<HTMLElement>('.xp-inner')!.style.setProperty('--pull', '0');
+      inner.style.setProperty('--pull', (pull / threshold).toFixed(3));
+    };
+    // Clicking a role on the rail goes straight to it.
+    railButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        pull = 0;
+        scrollTo({ top: stops()[Number(button.dataset.screen)], behavior: 'smooth' });
+      });
+    });
+
+    const go = (direction: number) => {
+      const all = stops();
+      const target = Math.max(0, Math.min(all.length - 1, nearest() + direction));
+      pull = 0;
+      showPull();
+      if (all[target] === scrollY) return;
+      busy = true;
+      scrollTo({ top: all[target], behavior: 'smooth' });
+      setTimeout(() => { busy = false; }, 900);
+    };
+    const push = (amount: number) => {
+      if (busy) return;
+      // Switching direction starts the pull over.
+      if (Math.sign(amount) !== Math.sign(pull)) pull = 0;
+      pull += amount;
+      showPull();
+      clearTimeout(relax);
+      relax = window.setTimeout(() => { pull = 0; showPull(); }, 260);
+      if (Math.abs(pull) >= threshold) go(Math.sign(pull));
+    };
+
+    addEventListener('wheel', (event) => {
+      if (event.ctrlKey) return;
+      event.preventDefault();
+      push(event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY);
+    }, { passive: false });
+
+    let touchY: number | null = null;
+    addEventListener('touchstart', (event) => { touchY = event.touches[0].clientY; }, { passive: true });
+    addEventListener('touchmove', (event) => {
+      if (touchY === null) return;
+      event.preventDefault();
+      push((touchY - event.touches[0].clientY) * 3);
+      touchY = event.touches[0].clientY;
+    }, { passive: false });
+    addEventListener('touchend', () => { touchY = null; });
+
+    addEventListener('keydown', (event) => {
+      const forward = ['ArrowDown', 'PageDown', ' '].includes(event.key);
+      const back = ['ArrowUp', 'PageUp'].includes(event.key);
+      if (!forward && !back) return;
+      if ((event.target as HTMLElement).closest('input, textarea, button')) return;
+      event.preventDefault();
+      if (!busy) go(forward ? 1 : -1);
+    });
+
+    // The title decodes from random characters, like the name on the homepage.
+    const title = document.querySelector<HTMLElement>('.xp-decode')!;
+    const final = title.textContent!;
+    const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const duration = Number(title.dataset.duration);
+    title.style.minWidth = `${title.getBoundingClientRect().width}px`;
+    const start = performance.now();
+    const decode = (now: number) => {
+      const done = Math.floor(((now - start) / duration) * final.length);
+      title.textContent = [...final].map((letter, index) => (index < done ? letter : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
+      if (now - start < duration) requestAnimationFrame(decode);
+      else { title.textContent = final; title.style.minWidth = ''; }
+    };
+    requestAnimationFrame(decode);
+  }
+</script>

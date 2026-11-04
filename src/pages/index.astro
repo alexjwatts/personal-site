@@ -1,0 +1,957 @@
+---
+// Home: a live globe that assembles itself, then turns to each stop of the About me story as you scroll.
+import Base from '../layouts/Base.astro';
+import { site } from '../site';
+
+// Steps that travel to a new city get more scroll than steps that stay put, so the globe never rushes a move.
+// The stops on the route, in order, for the progress rail.
+const stops = ['Chicago', 'Seattle', 'Berlin', 'London', 'Berlin', 'Boston'];
+
+// The last step gets extra so its text holds before the page moves on.
+const weights = site.story.map((step, index) => (index > 0 && step.at !== site.story[index - 1].at ? 1.7 : 1) + (index === site.story.length - 1 ? 0.8 : 0));
+---
+
+<Base>
+  <div class="home">
+    <div class="home-left">
+      <section class="home-hero">
+        <h1 class="home-name home-decode" data-duration="1100">{site.name.split(' ').map((word, index) => <>{index > 0 && ' '}<span>{word}</span></>)}</h1>
+        <p class="home-line home-decode" data-duration="2000">{site.intro.split(' ').map((word, index) => <>{index > 0 && ' '}<span>{word}</span></>)}</p>
+        <ul class="home-interests">{site.interests.map((interest, index) => <li style={`--i: ${index}`}>{interest}</li>)}</ul>
+        <div class="home-prompt" aria-hidden="true">
+          Scroll
+          <svg viewBox="0 0 16 16"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" /></svg>
+        </div>
+      </section>
+      <section class="home-story" id="about" style={`--steps: ${weights.reduce((sum, weight) => sum + weight, 0)}`}>
+        {site.story.map(() => <span class="home-snap" aria-hidden="true"></span>)}
+        <div class="home-pin">
+          <h2>About me</h2>
+          <div class="home-chapters">
+            {site.story.map((step, index) => (
+              <div class="home-chapter" data-at={step.at} data-travel={step.travel} data-weight={weights[index]}>
+                <p class="home-city">{step.city}</p>
+                <p>{step.text}</p>
+              </div>
+            ))}
+          </div>
+          {/* The way on to Experience shows under the last piece of the story (Boston), so it's there without an extra scroll. */}
+          <p class="home-next">
+            <a class="home-next-link" href={site.next.home.href}>
+              {site.next.home.label}
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5" /></svg>
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <div class="home-right">
+      <div class="home-globe">
+        <canvas data-words={JSON.stringify(site.interests)} aria-label="Globe showing Chicago, Seattle, Berlin, London, and Boston connected by a route" role="img"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+  <nav class="home-rail" aria-label="Places in About me">
+    <ol>
+      {stops.map((stop, index) => (
+        <li><button type="button" data-stop={index}><span>{stop}</span></button></li>
+      ))}
+    </ol>
+    <span class="home-rail-fill" aria-hidden="true"></span>
+  </nav>
+</Base>
+
+<style>
+  .home {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(1rem, 4vw, 4rem);
+    padding: 0 var(--gutter);
+  }
+
+  .home-hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100svh - 3.9rem);
+    padding-bottom: 2rem;
+  }
+
+  .home-hero h1 {
+    font-size: clamp(3.25rem, 7.5vw, 6.5rem);
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  .home-hero p {
+    max-width: 32rem;
+    margin: 1.5rem 0 0;
+    font-size: clamp(1.375rem, 2.6vw, 1.875rem);
+    line-height: 1.3;
+  }
+
+  .home-hero ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    max-width: 30rem;
+    margin: 2rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+
+  /* First screen: the name and line decode together (the line finishing second), then the interests follow. */
+  .home-interests li {
+    animation: home-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(1.5s + var(--i) * 0.08s);
+  }
+
+  @keyframes home-rise {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateY(0.6em);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-interests li,
+    .home-prompt,
+    .home-prompt svg {
+      animation: none;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .home-interests {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
+
+  /* Scroll stops: one invisible marker per piece of text, marking where that text is fully shown. The script
+     moves between stops one deliberate push at a time (the same resistance as the Experience page). */
+  .home-snap {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+  }
+
+  .home-story {
+    position: relative;
+    height: calc(var(--steps) * 110vh);
+  }
+
+  .home-pin {
+    position: sticky;
+    top: 3.9rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: calc(100svh - 3.9rem);
+  }
+
+  .home-pin h2 {
+    margin-bottom: 1.5rem;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+  }
+
+  .home-chapters {
+    display: grid;
+  }
+
+  /* The old text lifts away first; the new text only rises in once it has gone, so the two never overlap. */
+  .home-chapter {
+    grid-area: 1 / 1;
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(1.25rem);
+    transition: opacity 0.35s ease-in, filter 0.35s ease-in, transform 0.35s ease-in;
+  }
+
+  .home-chapter.past {
+    transform: translateY(-1.25rem);
+  }
+
+  .home-chapter.current {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: opacity 0.5s ease-out 0.35s, filter 0.5s ease-out 0.35s, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.35s;
+  }
+
+  .home-prompt {
+    position: fixed;
+    z-index: 3;
+    right: 0;
+    bottom: 1.75rem;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    width: max-content;
+    margin-inline: auto;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    pointer-events: none;
+    animation: home-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 2.4s both;
+    transition: opacity 0.4s;
+  }
+
+  .home-prompt svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: home-nudge 1.8s ease-in-out 3s infinite;
+  }
+
+  /* Under the Boston text: a single way on to the Experience page. It rises in with the last piece of the story. */
+  .home-next {
+    margin: clamp(1.75rem, 5vh, 3rem) 0 0;
+    padding-top: clamp(1.25rem, 3.5vh, 2rem);
+    border-top: 1px solid var(--line); /* the line between the story and the way on */
+    opacity: 0;
+    transform: translateY(1rem);
+    visibility: hidden;
+    transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s 0.5s, border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .home-next.shown {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    transition: opacity 0.5s ease-out 0.45s, transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.45s, visibility 0s, border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .home-next-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.6rem;
+    border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 1.125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .home-next-link:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 1.5rem color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .home-next-link:hover svg {
+    transform: translateX(0.25rem);
+  }
+
+  .home-next-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .home-next-link svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s;
+  }
+
+  /* Progress rail: one dot per stop on the route, filling as the story travels. Desktop only. */
+  .home-rail {
+    --fill: 0;
+    position: fixed;
+    z-index: 4;
+    top: 50%;
+    right: clamp(1rem, 2vw, 1.75rem);
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  .home-rail.on {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .home-rail ol {
+    display: grid;
+    gap: 1.1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .home-rail::before,
+  .home-rail-fill {
+    content: '';
+    position: absolute;
+    top: 0.625rem;
+    right: 3.5px;
+    width: 1px;
+    height: calc((100% - 1.25rem) * var(--fill));
+    background: var(--accent);
+  }
+
+  .home-rail::before {
+    height: calc(100% - 1.25rem);
+    background: var(--line);
+  }
+
+  .home-rail button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font: 400 0.8125rem/1.25rem var(--sans);
+    cursor: pointer;
+  }
+
+  .home-rail button::after {
+    content: '';
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--muted);
+    border-radius: 50%;
+    background: var(--bg);
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
+  }
+
+  .home-rail button:hover,
+  .home-rail button.current {
+    color: var(--text);
+  }
+
+  .home-rail button.visited::after {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .home-rail button.current {
+    font-weight: 600;
+  }
+
+  .home-rail button.current::after {
+    transform: scale(1.4);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .home-rail button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .home-prompt.gone {
+    opacity: 0;
+  }
+
+  @keyframes home-nudge {
+    0%, 60%, 100% { transform: none; }
+    30% { transform: translateY(0.3rem); }
+  }
+
+  .home-chapter p {
+    max-width: 30rem;
+    margin: 0;
+    font-size: clamp(1.125rem, 1.8vw, 1.375rem);
+    line-height: 1.45;
+  }
+
+  .home-chapter .home-city {
+    margin-bottom: 0.4rem;
+    color: var(--accent);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .home-globe {
+    position: sticky;
+    top: 3.9rem;
+    display: grid;
+    place-items: center;
+    height: calc(100svh - 3.9rem);
+  }
+
+  .home-globe canvas {
+    user-select: none;
+    width: min(100%, calc(100svh - 4.5rem));
+    aspect-ratio: 1;
+    mask-image: radial-gradient(closest-side, #000 var(--mask, 82%), transparent calc(var(--mask, 82%) + 18%));
+    cursor: grab;
+    touch-action: pan-y;
+  }
+
+  .home-globe canvas:active {
+    cursor: grabbing;
+  }
+
+  @media (max-width: 899px) {
+    .home-prompt {
+      display: none;
+    }
+
+
+    .home-rail {
+      display: none;
+    }
+
+    .home {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 0;
+    }
+
+    .home-right {
+      position: sticky;
+      z-index: 2;
+      top: 3.9rem;
+      background: var(--bg);
+    }
+
+    .home-globe {
+      position: static;
+      height: auto;
+    }
+
+    .home-globe canvas {
+      width: min(100%, 40svh);
+    }
+
+    .home-hero {
+      min-height: 0;
+      padding: 1.5rem 0 5rem;
+    }
+
+    .home-pin {
+      top: calc(3.9rem + 40svh);
+      justify-content: flex-start;
+      height: auto;
+      min-height: calc(100svh - 3.9rem - 40svh);
+      padding-top: 1rem;
+    }
+
+    .home-pin h2 {
+      margin-bottom: 0.75rem;
+      font-size: 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  import dots from '../data/globe-dots.json';
+
+  const canvas = document.querySelector<HTMLCanvasElement>('.home-globe canvas')!;
+  const context = canvas.getContext('2d')!;
+  const story = document.querySelector<HTMLElement>('.home-story')!;
+  const pin = document.querySelector<HTMLElement>('.home-pin')!;
+  const chapters = [...document.querySelectorAll<HTMLElement>('.home-chapter')];
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const weights = chapters.map((chapter) => Number(chapter.dataset.weight));
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const rail = document.querySelector<HTMLElement>('.home-rail')!;
+  const stopButtons = [...rail.querySelectorAll<HTMLButtonElement>('button')];
+
+  // Each scroll stop sits where its piece of text is fully shown (three quarters through its step).
+  const snaps = [...story.querySelectorAll<HTMLElement>('.home-snap')];
+  const placeSnaps = () => {
+    const pinTop = parseFloat(getComputedStyle(pin).top);
+    let before = 0;
+    snaps.forEach((snap, index) => {
+      snap.style.top = `${((before + weights[index] * 0.75) / totalWeight) * (story.offsetHeight - pin.offsetHeight)}px`;
+      snap.style.scrollMarginTop = `${pinTop}px`;
+      before += weights[index];
+    });
+  };
+  placeSnaps();
+  addEventListener('resize', placeSnaps);
+
+  // Every place the page can rest: the first screen, each piece of the story, the button below, the very bottom.
+  const header = document.querySelector<HTMLElement>('.bar')!;
+  const nextLink = document.querySelector<HTMLElement>('.home-next')!;
+  const restPoints = () => [
+    0,
+    ...snaps.map((snap) => snap.getBoundingClientRect().top + scrollY - parseFloat(snap.style.scrollMarginTop)),
+    document.documentElement.scrollHeight - innerHeight,
+  ].map((top) => Math.round(Math.min(top, document.documentElement.scrollHeight - innerHeight)));
+  const nearest = () => {
+    const all = restPoints();
+    return all.reduce((best, top, index) => (Math.abs(top - scrollY) < Math.abs(all[best] - scrollY) ? index : best), 0);
+  };
+
+  // Moving between stops is a slow glide (longer for longer trips) so the route can be seen travelling.
+  let gliding = 0;
+  const glideTo = (top: number) => {
+    cancelAnimationFrame(gliding);
+    const from = scrollY;
+    const distance = top - from;
+    const duration = still ? 0 : Math.min(2600, Math.max(1100, Math.abs(distance) * 1.4));
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = duration ? Math.min(1, (now - start) / duration) : 1;
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+      scrollTo({ top: from + distance * eased, behavior: 'instant' });
+      if (t < 1) gliding = requestAnimationFrame(step);
+    };
+    gliding = requestAnimationFrame(step);
+    return duration;
+  };
+
+  // Clicking a stop on the rail jumps straight there, past any stops in between.
+  stopButtons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      const first = chapters.findIndex((chapter) => Number(chapter.dataset.at) === index);
+      glideTo(restPoints()[first + 1]);
+    });
+  });
+
+  // Resistance: moving on takes a deliberate push. Scrolling builds up "pull" (what's on screen visibly gives a
+  // little); once the pull passes a threshold the page glides to the next stop, then waits a moment before
+  // accepting another push. A pause lets the pull relax back to nothing.
+  if (!still) {
+    const give = [document.querySelector<HTMLElement>('.home-hero > :first-child')!, document.querySelector<HTMLElement>('.home-chapters')!, document.querySelector<HTMLElement>('.home-next-link')!];
+    for (const element of give) element.style.transition = 'translate 0.25s ease-out';
+    let pull = 0;
+    let busy = false;
+    let relax = 0;
+    const threshold = 280;
+    const showPull = () => {
+      const index = nearest();
+      const target = index === 0 ? give[0] : index <= snaps.length ? give[1] : give[2];
+      for (const element of give) element.style.translate = '';
+      target.style.translate = `0 ${(-pull / threshold) * 2.5}rem`;
+    };
+    const go = (direction: number) => {
+      const all = restPoints();
+      const target = Math.max(0, Math.min(all.length - 1, nearest() + direction));
+      pull = 0;
+      showPull();
+      if (all[target] === Math.round(scrollY)) return;
+      busy = true;
+      const duration = glideTo(all[target]);
+      setTimeout(() => { busy = false; }, duration + 150);
+    };
+    const push = (amount: number) => {
+      if (busy) return;
+      if (Math.sign(amount) !== Math.sign(pull)) pull = 0;
+      pull += amount;
+      showPull();
+      clearTimeout(relax);
+      relax = window.setTimeout(() => { pull = 0; showPull(); }, 260);
+      if (Math.abs(pull) >= threshold) go(Math.sign(pull));
+    };
+
+    addEventListener('wheel', (event) => {
+      if (event.ctrlKey) return;
+      event.preventDefault();
+      push(event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY);
+    }, { passive: false });
+
+    let touchY: number | null = null;
+    addEventListener('touchstart', (event) => { touchY = event.touches[0].clientY; }, { passive: true });
+    addEventListener('touchmove', (event) => {
+      if (touchY === null || drag !== null) return;
+      event.preventDefault();
+      push((touchY - event.touches[0].clientY) * 3);
+      touchY = event.touches[0].clientY;
+    }, { passive: false });
+    addEventListener('touchend', () => { touchY = null; });
+
+    addEventListener('keydown', (event) => {
+      const forward = ['ArrowDown', 'PageDown', ' '].includes(event.key);
+      const back = ['ArrowUp', 'PageUp'].includes(event.key);
+      if (!forward && !back) return;
+      if ((event.target as HTMLElement).closest('input, textarea, button, a')) return;
+      event.preventDefault();
+      if (!busy) go(forward ? 1 : -1);
+    });
+  }
+  const prompt = document.querySelector<HTMLElement>('.home-prompt')!;
+  const rad = Math.PI / 180;
+
+  // Each name sits on the side of its dot that the route lines don't pass through.
+  const cities = {
+    chicago: { name: 'Chicago', lon: -87.6, lat: 41.9, side: 'below-left' },
+    seattle: { name: 'Seattle', lon: -122.3, lat: 47.6, side: 'left' },
+    berlin: { name: 'Berlin', lon: 13.4, lat: 52.5, side: 'right' },
+    london: { name: 'London', lon: -0.1, lat: 51.5, side: 'below-left' },
+    boston: { name: 'Boston', lon: -71.1, lat: 42.4, side: 'below-right' },
+  };
+  const route = [cities.chicago, cities.seattle, cities.berlin, cities.london, cities.berlin, cities.boston];
+  const home = { lon: -40, lat: 35 };
+
+  // Each dot starts scattered and settles into place, so the globe assembles itself on load.
+  // Starting spots are spread through a soft disc (denser near the middle) rather than a square, so no edges show.
+  const scatterSpot = () => {
+    const angle = Math.random() * Math.PI * 2;
+    const reach = Math.sqrt(Math.random()) * 0.48;
+    return { sx: 0.5 + Math.cos(angle) * reach, sy: 0.5 + Math.sin(angle) * reach };
+  };
+  const edgeFade = (x: number, y: number) => clamp((size * 0.5 - Math.hypot(x - size / 2, y - size / 2)) / (size * 0.15));
+  const points = dots.map(([lon, lat]) => ({ lon, lat, ...scatterSpot(), delay: Math.random() * 0.5 }));
+  const vector = (lon: number, lat: number) => [Math.cos(lat * rad) * Math.cos(lon * rad), Math.sin(lat * rad), Math.cos(lat * rad) * Math.sin(lon * rad)];
+  const clamp = (value: number) => Math.min(1, Math.max(0, value));
+  const smooth = (t: number) => t * t * (3 - 2 * t);
+  const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
+  // Arc paths between stops. The London → Berlin return (leg 3) is computed but never drawn.
+  const arcs = route.slice(1).map((city, index) => {
+    const a = vector(route[index].lon, route[index].lat);
+    const b = vector(city.lon, city.lat);
+    const angle = Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+    return Array.from({ length: 61 }, (_, i) => {
+      const t = i / 60;
+      const s1 = Math.sin((1 - t) * angle) / Math.sin(angle);
+      const s2 = Math.sin(t * angle) / Math.sin(angle);
+      const lift = 1 + Math.sin(Math.PI * t) * (index === 3 ? -0.02 : index === 2 ? 0.04 : 0.06 + angle * 0.12);
+      return [0, 1, 2].map((k) => (a[k] * s1 + b[k] * s2) * lift);
+    });
+  });
+
+  // Dragging works like a rubber band: the further you pull from the route, the less the globe turns
+  // (it can never go past about 55°), and when you let go it springs back.
+  let pull = 0;
+  let drag: number | null = null;
+  const stretch = () => 55 * rad * Math.tanh(pull / 260);
+  let size = 0;
+  let eased = 0;
+
+  // Keywords are drawn as dot-matrix text on a ring around the globe (wide screens only).
+  // Each keyword is sampled into dots once, and each dot flies in from a random spot like the map's dots.
+  const words: string[] = JSON.parse(canvas.dataset.words!);
+  let wordDots: { x: number; y: number; sx: number; sy: number; delay: number }[][] = [];
+  let halfWidths: number[] = [];
+  const ringOn = () => innerWidth >= 900;
+
+  const buildWords = () => {
+    const scratch = document.createElement('canvas').getContext('2d', { willReadFrequently: true })!;
+    const font = '600 30px "Instrument Sans Variable", system-ui, sans-serif';
+    wordDots = words.map((word, index) => {
+      scratch.font = font;
+      const width = Math.ceil(scratch.measureText(word).width) + 4;
+      const height = 40;
+      scratch.canvas.width = width;
+      scratch.canvas.height = height;
+      scratch.font = font;
+      scratch.textBaseline = 'middle';
+      scratch.fillText(word, 2, height / 2);
+      const pixels = scratch.getImageData(0, 0, width, height).data;
+      const dotsForWord = [];
+      for (let y = 0; y < height; y += 3) {
+        for (let x = 0; x < width; x += 3) {
+          if (pixels[(y * width + x) * 4 + 3] > 120) {
+            dotsForWord.push({ x: (x - width / 2) / 2, y: (y - height / 2) / 2, ...scatterSpot(), delay: 1.3 + index * 0.12 + Math.random() * 0.4 });
+          }
+        }
+      }
+      return dotsForWord;
+    });
+    scratch.font = '600 15px "Instrument Sans Variable", system-ui, sans-serif';
+    halfWidths = words.map((word) => scratch.measureText(word).width / 2);
+  };
+  document.fonts.ready.then(buildWords);
+  let colors = { dot: '', accent: '', text: '', bg: '' };
+
+  const resize = () => {
+    const ratio = devicePixelRatio || 1;
+    size = canvas.clientWidth;
+    canvas.width = size * ratio;
+    canvas.height = size * ratio;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const style = getComputedStyle(document.documentElement);
+    colors = { dot: style.getPropertyValue('--muted').trim(), accent: style.getPropertyValue('--accent').trim(), text: style.getPropertyValue('--text').trim(), bg: style.getPropertyValue('--bg').trim() };
+  };
+
+  const project = ([x0, y0, z0]: number[], turn: number, tilt: number) => {
+    const x1 = x0 * Math.cos(turn) - z0 * Math.sin(turn);
+    const z1 = x0 * Math.sin(turn) + z0 * Math.cos(turn);
+    return { x: -x1, y: y0 * Math.cos(tilt) - z1 * Math.sin(tilt), z: y0 * Math.sin(tilt) + z1 * Math.cos(tilt) };
+  };
+
+  const frame = (time: number) => {
+    const seconds = time / 1000;
+    const settle = still ? 1 : Math.min(1, seconds / 1.8);
+
+    // Story progress follows the scroll with a little lag; `lead` blends from the idle globe into the story.
+    const top = parseFloat(getComputedStyle(pin).top);
+    const rect = story.getBoundingClientRect();
+    const target = clamp((top - rect.top) / (story.offsetHeight - pin.offsetHeight));
+    eased = still ? target : eased + (target - eased) * 0.12;
+    const lead = smooth(clamp(1 - (rect.top - top) / (innerHeight * 0.8)));
+
+    // Which step we're on, and how far through it, measured against each step's share of the scroll.
+    let position = eased * totalWeight;
+    let step = 0;
+    while (step < chapters.length - 1 && position >= weights[step]) position -= weights[step++];
+    const within = Math.min(1, position / weights[step]);
+    const at = (index: number) => Number(chapters[index].dataset.at);
+    const fromAt = at(Math.max(0, step - 1));
+    const toAt = at(step);
+    const moving = fromAt !== toAt;
+
+    // A move draws over the first 60% of its step, then the text holds for the rest.
+    // Text about the move itself (data-travel) shows while the line is drawing; text about a place appears just
+    // before the line lands there; text that stays in the same place swaps straight away.
+    const travel = moving ? smooth(Math.min(1, within / 0.6)) : 1;
+    const drawn = fromAt + travel * (toAt - fromAt);
+    const shown = !moving || chapters[step].dataset.travel || travel >= 0.85 ? step : Math.max(0, step - 1);
+    chapters.forEach((chapter, index) => {
+      const current = lead > 0.9 && index === shown;
+      chapter.classList.toggle('current', current);
+      chapter.classList.toggle('past', !current && lead > 0.9 && index < shown);
+    });
+    nextLink.classList.toggle('shown', lead > 0.9 && shown === chapters.length - 1);
+    prompt.classList.toggle('gone', scrollY > 40);
+
+    // The rail shows while the story is on screen; dots up to the line's position fill in.
+    rail.classList.toggle('on', lead > 0.9 && rect.bottom > innerHeight * 0.6);
+    rail.style.setProperty('--fill', String(clamp(drawn / (stopButtons.length - 1))));
+    stopButtons.forEach((button, index) => {
+      button.classList.toggle('visited', index <= drawn + 0.05);
+      button.classList.toggle('current', index === (travel >= 0.85 ? toAt : fromAt));
+    });
+
+    // The camera follows the line: it eases from the previous stop to the next while that leg draws.
+    const from = route[fromAt];
+    const to = route[toAt];
+    const camera = { lon: mix(from.lon, to.lon, travel), lat: mix(from.lat, to.lat, travel) };
+    const idle = { lon: home.lon + (still ? 0 : 26 * Math.sin(seconds * 0.12)), lat: home.lat };
+    const lon = mix(idle.lon, camera.lon, lead);
+    const lat = mix(idle.lat, camera.lat, lead) - 8 * lead;
+    if (drag === null) pull = Math.abs(pull) < 0.5 ? 0 : pull * 0.9;
+    const turn = (90 - lon) * rad + stretch() * (1 - lead);
+    const tilt = lat * rad;
+    const ring = ringOn() && wordDots.length > 0;
+    const radius = size * mix(ring ? 0.33 : 0.44, 0.61, lead);
+    canvas.style.setProperty('--mask', `${mix(ring ? 140 : 100, 82, lead)}%`);
+    const centre = size / 2;
+
+    context.clearRect(0, 0, size, size);
+
+    // The keyword ring tilts like a planet's ring; the half behind the globe is drawn first and fainter.
+    const placed = ring
+      ? words.map((_, index) => {
+          const angle = (index / words.length) * Math.PI * 2 + (still ? 0 : seconds * 0.12);
+          const reach = size / 2 - Math.max(...halfWidths) - 10;
+          return { index, x: centre + Math.cos(angle) * reach, y: centre + Math.sin(angle) * size * 0.11 + size * 0.04, z: Math.sin(angle) };
+        })
+      : [];
+    // Each keyword flies in as dots, then the dots resolve into crisp text. Words behind the globe fade out until they come round again.
+    const drawWords = (front: boolean) => {
+      for (const word of placed) {
+        if (word.z >= 0 !== front) continue;
+        const clear = front ? 1 : clamp((Math.abs(word.x - centre) - halfWidths[word.index] - radius * 0.75) / (radius * 0.25));
+        const depth = (1 - lead) * clear * (front ? 0.65 + word.z * 0.35 : 0.25 + (1 + word.z) * 0.15);
+        if (depth === 0) continue;
+        const solid = still ? 1 : smooth(clamp((seconds - 2.6 - word.index * 0.12) / 0.5));
+
+        if (solid < 1) {
+          for (const dot of wordDots[word.index]) {
+            const t = still ? 1 : 1 - (1 - clamp((seconds - dot.delay) / 0.9)) ** 3;
+            const x = mix(dot.sx * size, word.x + dot.x, t);
+            const y = mix(dot.sy * size, word.y + dot.y, t);
+            context.globalAlpha = depth * (0.35 + 0.65 * t) * (1 - solid) * (t === 1 ? 1 : edgeFade(x, y));
+            context.fillStyle = front ? colors.text : colors.dot;
+            context.fillRect(x - 0.6, y - 0.6, 1.2, 1.2);
+          }
+        }
+
+        if (solid > 0) {
+          context.globalAlpha = depth * solid;
+          context.font = '600 15px "Instrument Sans Variable", system-ui, sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillStyle = front ? colors.text : colors.dot;
+          context.fillText(words[word.index], word.x, word.y);
+        }
+      }
+    };
+    drawWords(false);
+
+    for (const point of points) {
+      const p = project(vector(point.lon, point.lat), turn, tilt);
+      const ease = 1 - (1 - clamp((settle - point.delay) / 0.5)) ** 3;
+      const x = mix(point.sx * size, centre + p.x * radius, ease);
+      const y = mix(point.sy * size, centre - p.y * radius, ease);
+      if (x < -4 || y < -4 || x > size + 4 || y > size + 4) continue;
+      context.globalAlpha = (p.z > 0 ? 0.25 + p.z * 0.55 : 0.06) * (ease === 1 ? 1 : 0.35 + 0.65 * ease) * (ease === 1 ? 1 : edgeFade(x, y));
+      context.fillStyle = colors.dot;
+      context.beginPath();
+      context.arc(x, y, p.z > 0 ? 1.1 + p.z * 0.8 : 0.9, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    // On the first screen the whole route shows; in the story only the part travelled so far is bright.
+    context.lineWidth = 1.75;
+    context.strokeStyle = colors.accent;
+    arcs.forEach((arc, index) => {
+      // The trip back from London to Berlin isn't drawn: the globe's turn from London back to Berlin shows it.
+      if (index === 3) return;
+      const path = arc.map((v) => project(v, turn, tilt));
+      const reached = clamp(drawn - index);
+      const bright = Math.max(1 - lead, reached);
+      const cut = Math.round(bright * (path.length - 1));
+      for (let i = 1; i < path.length; i++) {
+        const front = Math.min(path[i - 1].z, path[i].z) > -0.05;
+        const lit = i <= cut;
+        context.globalAlpha = settle * (front ? (lit ? 0.9 : 0.14) : 0.06);
+        context.beginPath();
+        context.moveTo(centre + path[i - 1].x * radius, centre - path[i - 1].y * radius);
+        context.lineTo(centre + path[i].x * radius, centre - path[i].y * radius);
+        context.stroke();
+      }
+
+      if (still || cut < 2) return;
+      const packet = path[Math.floor(((seconds * 0.35 + index * 0.2) % 1) * cut)];
+      if (packet.z < -0.05) return;
+      context.globalAlpha = settle;
+      context.fillStyle = colors.accent;
+      context.shadowColor = colors.accent;
+      context.shadowBlur = 12;
+      context.beginPath();
+      context.arc(centre + packet.x * radius, centre - packet.y * radius, 3, 0, Math.PI * 2);
+      context.fill();
+      context.shadowBlur = 0;
+    });
+
+    const labels: { city: (typeof route)[number]; x: number; y: number; alpha: number; current: boolean }[] = [];
+
+    route.forEach((city, index) => {
+      if (route.indexOf(city) !== index) return;
+      const p = project(vector(city.lon, city.lat), turn, tilt);
+      const visible = Math.max(1 - lead, clamp((drawn - index + 0.05) * 20));
+      if (p.z < 0 || visible === 0) return;
+      const x = centre + p.x * radius;
+      const y = centre - p.y * radius;
+      const current = lead > 0.9 && route[Math.round(drawn)] === city;
+      const pulse = still ? 0 : (((seconds * 0.6 + city.lon / 100) % 1) + 1) % 1;
+      context.globalAlpha = settle * visible * (1 - pulse) * (current ? 0.8 : 0.4);
+      context.strokeStyle = colors.accent;
+      context.beginPath();
+      context.arc(x, y, 4 + pulse * (current ? 22 : 14), 0, Math.PI * 2);
+      context.stroke();
+      context.globalAlpha = settle * visible;
+      context.fillStyle = colors.accent;
+      context.beginPath();
+      context.arc(x, y, current ? 5.5 : 4, 0, Math.PI * 2);
+      context.fill();
+      labels.push({ city, x, y, alpha: settle * visible, current });
+    });
+
+    drawWords(true);
+
+    // Names go on last, each in a cleared patch of the canvas, so no line, dot or pulse ever runs through them.
+    // The patch is erased rather than painted, so the page's own background shows through and always matches.
+    for (const { city, x, y, alpha, current } of labels) {
+      context.font = `${current ? 600 : 500} ${current ? 15 : 13}px "Instrument Sans Variable", system-ui, sans-serif`;
+      const width = context.measureText(city.name).width;
+      const height = current ? 15 : 13;
+      const gap = 12;
+      const left = city.side.includes('left') ? x - gap - width : city.side.includes('right') ? x + gap : x - width / 2;
+      const top = city.side.startsWith('below') ? y + gap - 2 : y - height / 2;
+      context.globalAlpha = alpha;
+      context.globalCompositeOperation = 'destination-out';
+      context.beginPath();
+      context.roundRect(left - 5, top - 3, width + 10, height + 7, 6);
+      context.fill();
+      context.globalCompositeOperation = 'source-over';
+      context.fillStyle = colors.text;
+      context.textAlign = 'left';
+      context.textBaseline = 'top';
+      context.fillText(city.name, left, top);
+    }
+
+    context.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  };
+
+  // Grab and turn; the globe lets go however the drag ends (released anywhere, mouse leaves the window,
+  // button already up, tab switch), so it can never stay stuck to the cursor.
+  const release = () => { drag = null; };
+  canvas.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    // Stop the drag from also selecting the text the cursor passes over.
+    event.preventDefault();
+    getSelection()?.removeAllRanges();
+    drag = event.clientX;
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* capture is a nicety; window listeners cover release */ }
+  });
+  addEventListener('pointermove', (event) => {
+    if (drag === null) return;
+    if (event.pointerType === 'mouse' && event.buttons === 0) return release();
+    pull += event.clientX - drag;
+    drag = event.clientX;
+  });
+  for (const type of ['pointerup', 'pointercancel', 'blur']) addEventListener(type, release);
+  canvas.addEventListener('lostpointercapture', release);
+  document.addEventListener('mouseleave', release);
+  document.addEventListener('visibilitychange', release);
+
+  // The name and the student line decode from random characters into place, left to right, as the globe assembles.
+  // Both start together; each element's data-duration sets when it finishes. Every word is held at its final
+  // width while it scrambles, so wider random letters never push the text onto a new line.
+  const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  if (!still) {
+    const start = performance.now();
+    for (const element of document.querySelectorAll<HTMLElement>('.home-decode')) {
+      const words = [...element.querySelectorAll('span')];
+      const finals = words.map((word) => word.textContent!);
+      const total = finals.join('').length;
+      const duration = Number(element.dataset.duration);
+      const widths = words.map((word) => word.getBoundingClientRect().width);
+      words.forEach((word, index) => {
+        word.style.display = 'inline-block';
+        word.style.width = `${widths[index]}px`;
+        word.style.whiteSpace = 'nowrap';
+        word.style.overflow = 'hidden';
+        word.style.verticalAlign = 'top';
+      });
+      const decode = (now: number) => {
+        let done = Math.floor(((now - start) / duration) * total);
+        words.forEach((word, index) => {
+          const final = finals[index];
+          word.textContent = [...final].map((letter, at) => (at < done ? letter : glyphs[Math.floor(Math.random() * glyphs.length)])).join('');
+          done -= final.length;
+        });
+        if (now - start < duration) requestAnimationFrame(decode);
+        else words.forEach((word, index) => { word.textContent = finals[index]; word.removeAttribute('style'); });
+      };
+      requestAnimationFrame(decode);
+    }
+  }
+
+  new ResizeObserver(resize).observe(canvas);
+  // Pick up the new page colors if the visitor switches between light and dark mode.
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resize);
+  resize();
+  requestAnimationFrame(frame);
+</script>

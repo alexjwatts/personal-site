@@ -1,0 +1,15 @@
+---
+import CaseStudy from '../../components/CaseStudy.astro';
+import { site } from '../../site';
+
+export const getStaticPaths = () =>
+  site.projects.filter((project) => project.slug && project.detail).map((project) => ({ params: { slug: project.slug }, props: { project } }));
+
+const { project } = Astro.props;
+---
+
+<CaseStudy
+  job={project}
+  back={{ label: 'AI Builds', href: '/builds' }}
+  sections={{ first: 'The problem', second: 'How it works', work: 'What I changed' }}
+/>

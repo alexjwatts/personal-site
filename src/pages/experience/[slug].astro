@@ -1,0 +1,15 @@
+---
+import CaseStudy from '../../components/CaseStudy.astro';
+import { site } from '../../site';
+
+export const getStaticPaths = () =>
+  site.experience.filter((job) => job.slug && job.detail).map((job) => ({ params: { slug: job.slug }, props: { job } }));
+
+const { job } = Astro.props;
+---
+
+<CaseStudy
+  job={job}
+  back={{ label: 'Experience', href: '/experience' }}
+  sections={{ first: 'The company', second: 'The role', work: 'What I did', workPending: 'What I’ll work on' }}
+/>
