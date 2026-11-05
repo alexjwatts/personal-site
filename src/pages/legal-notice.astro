@@ -1,0 +1,24 @@
+---
+// Legal notice (Impressum). Name and email only, by Alex's choice.
+import Base from '../layouts/Base.astro';
+import { site } from '../site';
+
+const email = site.links.find((link) => link.href.startsWith('mailto:'))!.href.slice(7);
+---
+
+<Base title="Legal notice" description="Legal notice for alexwatts.de">
+  <div class="legal">
+    <h1>Legal notice</h1>
+    <h2>Responsible for this website</h2>
+    <p>{site.name}</p>
+    <h2>Contact</h2>
+    <p>Email: <a href={`mailto:${email}`}>{email}</a></p>
+    <h2>Responsible for content</h2>
+    <p>{site.name}</p>
+    <h2>Liability for links</h2>
+    <p>
+      This website links to external sites. I have no control over their content and am not responsible for it.
+      The operators of linked sites are responsible for their own content.
+    </p>
+  </div>
+</Base>

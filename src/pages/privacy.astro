@@ -1,0 +1,36 @@
+---
+// Privacy policy: hosting logs, no cookies or tracking, email contact, visitors' rights.
+import Base from '../layouts/Base.astro';
+import { site } from '../site';
+
+const email = site.links.find((link) => link.href.startsWith('mailto:'))!.href.slice(7);
+---
+
+<Base title="Privacy policy" description="Privacy policy for alexwatts.de">
+  <div class="legal">
+    <h1>Privacy policy</h1>
+    <h2>Who is responsible</h2>
+    <p>{site.name}, <a href={`mailto:${email}`}>{email}</a></p>
+    <h2>Hosting</h2>
+    <p>
+      This website is hosted on GitHub Pages (GitHub, Inc., USA). When you visit, GitHub processes technically
+      necessary data, such as your IP address, in server logs to deliver the site and keep it secure. The legal basis
+      is Art. 6(1)(f) GDPR (legitimate interest in running the website securely).
+    </p>
+    <h2>Cookies and tracking</h2>
+    <p>
+      This website does not use cookies, analytics, or tracking, and does not load content from third parties. Fonts
+      are served from this website itself.
+    </p>
+    <h2>Contacting me</h2>
+    <p>
+      If you email me, I use your details only to reply to your message (Art. 6(1)(f) GDPR) and do not share them.
+    </p>
+    <h2>Your rights</h2>
+    <p>
+      You have the right to access, correct, delete, or restrict the processing of your personal data, to data
+      portability, and to object to processing. You can also complain to a data protection supervisory authority.
+      To exercise these rights, email me.
+    </p>
+  </div>
+</Base>
