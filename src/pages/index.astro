@@ -950,8 +950,6 @@ const weights = site.story.map((step, index) => (index > 0 && step.at !== site.s
   }
 
   new ResizeObserver(resize).observe(canvas);
-  // Pick up the new page colors if the visitor switches between light and dark mode.
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', resize);
   resize();
   requestAnimationFrame(frame);
 </script>

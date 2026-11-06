@@ -1,25 +1,15 @@
 :root {
-  color-scheme: light dark;
-  --bg: #ffffff;
-  --text: #17191c;
-  --muted: #565b62;
-  --line: #e2e4e7;
-  --dot: #d5d8dc;
-  --accent: #2233ff;
+  /* The site is always dark, whatever the visitor's system setting. */
+  color-scheme: dark;
+  --bg: #101215;
+  --text: #f0f1f2;
+  --muted: #a9aeb5;
+  --line: #2a2d32;
+  --dot: #30343a;
+  --accent: #8d98ff;
   --gutter: clamp(1.25rem, 5vw, 4rem);
   --sans: 'Instrument Sans Variable', system-ui, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #101215;
-    --text: #f0f1f2;
-    --muted: #a9aeb5;
-    --line: #2a2d32;
-    --dot: #30343a;
-    --accent: #8d98ff;
-  }
 }
 
 * {
