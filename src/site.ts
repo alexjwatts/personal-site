@@ -333,7 +333,12 @@ export const site = {
     {
       city: 'Boston',
       at: 5,
-      text: 'Now in my 2nd of 4 years at Northeastern in Boston, I am searching for a six-month co-op from January – July 2027.',
+      text: 'I am in my second year at Northeastern University in Boston, where I will be until 2029.',
+    },
+    {
+      city: 'BMW',
+      at: 5,
+      text: 'Heading to Munich in January 2027 for my first co-op at BMW Group.',
     },
   ] as { city: string; at: number; text: string; travel?: boolean }[],
   nav: [
