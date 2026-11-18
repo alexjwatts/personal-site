@@ -5,7 +5,7 @@ import { site } from '../site';
 
 // Steps that travel to a new city get more scroll than steps that stay put, so the globe never rushes a move.
 // The stops on the route, in order, for the progress rail.
-const stops = ['Chicago', 'Seattle', 'Berlin', 'London', 'Berlin', 'Boston'];
+const stops = ['Chicago', 'Seattle', 'Berlin', 'London', 'Berlin', 'Boston', 'Munich'];
 
 // The last step gets extra so its text holds before the page moves on.
 const weights = site.story.map((step, index) => (index > 0 && step.at !== site.story[index - 1].at ? 1.7 : 1) + (index === site.story.length - 1 ? 0.8 : 0));
@@ -47,7 +47,7 @@ const weights = site.story.map((step, index) => (index > 0 && step.at !== site.s
     </div>
     <div class="home-right">
       <div class="home-globe">
-        <canvas data-words={JSON.stringify(site.interests)} aria-label="Globe showing Chicago, Seattle, Berlin, London, and Boston connected by a route" role="img"></canvas>
+        <canvas data-words={JSON.stringify(site.interests)} aria-label="Globe showing Chicago, Seattle, Berlin, London, Boston, and Munich connected by a route" role="img"></canvas>
       </div>
     </div>
   </div>
@@ -605,8 +605,9 @@ const weights = site.story.map((step, index) => (index > 0 && step.at !== site.s
     berlin: { name: 'Berlin', lon: 13.4, lat: 52.5, side: 'right' },
     london: { name: 'London', lon: -0.1, lat: 51.5, side: 'below-left' },
     boston: { name: 'Boston', lon: -71.1, lat: 42.4, side: 'below-right' },
+    munich: { name: 'Munich', lon: 11.6, lat: 48.1, side: 'below-right' },
   };
-  const route = [cities.chicago, cities.seattle, cities.berlin, cities.london, cities.berlin, cities.boston];
+  const route = [cities.chicago, cities.seattle, cities.berlin, cities.london, cities.berlin, cities.boston, cities.munich];
   const home = { lon: -40, lat: 35 };
 
   // Each dot starts scattered and settles into place, so the globe assembles itself on load.

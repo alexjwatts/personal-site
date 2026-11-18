@@ -397,10 +397,10 @@ const builds = [...site.projects].sort((a, b) => b.start.localeCompare(a.start))
   }
 
   /* Stats sit in equal columns pinned to the bottom of the card, number over label, so both cards line up. */
+  /* Always three columns, so a card with fewer stats still lines up with its neighbour. */
   .build-stats {
     display: grid;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.25rem;
     margin: auto 0 0;
     padding-top: 1.25rem;

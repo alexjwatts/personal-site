@@ -159,7 +159,6 @@ export const site = {
       stats: [
         { value: '269', label: 'Postings logged' },
         { value: '144', label: 'Companies' },
-        { value: '1', label: 'Co-op landed' },
       ],
       tools: [],
       link: { label: 'Read the full story', href: '/blog/over-polishing' },
@@ -337,7 +336,8 @@ export const site = {
     },
     {
       city: 'BMW',
-      at: 5,
+      at: 6,
+      travel: true,
       text: 'Heading to Munich in January 2027 for my first co-op at BMW Group.',
     },
   ] as { city: string; at: number; text: string; travel?: boolean }[],
