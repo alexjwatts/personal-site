@@ -23,7 +23,7 @@ const builds = [...site.projects].sort((a, b) => b.start.localeCompare(a.start))
           <p class="build-role">{build.role}</p>
           <p class="build-summary">{build.summary}</p>
           {build.stats.length > 0 && (
-            <dl class="build-stats">
+            <dl class="build-stats" style={`--count: ${build.stats.length}`}>
               {build.stats.map((stat) => (
                 <div><dd>{stat.value}</dd><dt>{stat.label}</dt></div>
               ))}
@@ -397,10 +397,11 @@ const builds = [...site.projects].sort((a, b) => b.start.localeCompare(a.start))
   }
 
   /* Stats sit in equal columns pinned to the bottom of the card, number over label, so both cards line up. */
-  /* Always three columns, so a card with fewer stats still lines up with its neighbour. */
+  /* Each column is a third of the card wide; a card with fewer stats keeps that width and centres them. */
   .build-stats {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--count), calc((100% - 2.5rem) / 3));
+    justify-content: center;
     gap: 1.25rem;
     margin: auto 0 0;
     padding-top: 1.25rem;
